@@ -12,11 +12,13 @@ public class LocalRedisConfig {
     @Value("${spring.redis.port}")
     private int redisPort;
 
+    @Value("${spring.redis.maxmemory}")
+    private String redisMaxMemory;
     private RedisServer redisServer;
 
     @PostConstruct
     public void startRedis() {
-        redisServer = new RedisServer(redisPort);
+        redisServer = RedisServer.builder().port(redisPort).setting("maxmemory " + redisMaxMemory).build();
         redisServer.start();
     }
 

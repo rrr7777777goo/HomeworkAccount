@@ -2,6 +2,7 @@ spring:
   redis:
     host: 127.0.0.1
     port: 6379
+    maxmemory: 128M
   datasource:
     url: jdbc:h2:mem:test
     username: sa
@@ -20,3 +21,5 @@ spring:
       hibernate:
         format_sql: true
         show_sql: true
+server:
+  port: 8085
