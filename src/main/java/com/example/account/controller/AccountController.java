@@ -3,6 +3,7 @@ package com.example.account.controller;
 import com.example.account.domain.Account;
 import com.example.account.service.AccountService;
 import com.example.account.service.RedisTestService;
+import com.example.dto.AccountDto;
 import com.example.dto.CreateAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +20,12 @@ public class AccountController {
     public CreateAccount.Response createAccount(
             @RequestBody @Valid CreateAccount.Request request
     ) {
-        accountService.createAccount();
-        return "success";
+
+        return CreateAccount.Response.from(
+                accountService.createAccount(
+                    request.getUserId(), request.getInitialBalance()
+                )
+        );
     }
 
     @GetMapping("/get-lock")
