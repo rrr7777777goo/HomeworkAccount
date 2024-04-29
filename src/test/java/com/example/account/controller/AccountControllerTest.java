@@ -111,11 +111,13 @@ class AccountControllerTest {
 
         //when
         //then
-        mockMvc.perform(get("/account/12"))
+
+        mockMvc.perform(get("/account/876"))
                 .andDo(print())
                 .andExpect(jsonPath("$.accountNumber").value("3456"))
                 .andExpect(jsonPath("$.accountStatus").value("IN_USE"))
                 .andExpect(status().isOk());
+
     }
 
     @Test
