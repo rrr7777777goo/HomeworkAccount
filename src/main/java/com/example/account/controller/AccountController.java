@@ -5,6 +5,7 @@ import com.example.account.service.AccountService;
 import com.example.account.service.RedisTestService;
 import com.example.dto.AccountDto;
 import com.example.dto.CreateAccount;
+import com.example.dto.DeleteAccount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,15 @@ public class AccountController {
         );
     }
 
+    @DeleteMapping("/account")
+    public DeleteAccount.Response deleteAccount(
+            @RequestBody @Valid DeleteAccount.Request request
+    ) {
+        return DeleteAccount.Response.from(accountService.deleteAccount(
+                request.getUserId(),
+                request.getAccountNumber()
+        ));
+    }
     @GetMapping("/get-lock")
     public String getLock() {
         return redisTestService.getLock();
