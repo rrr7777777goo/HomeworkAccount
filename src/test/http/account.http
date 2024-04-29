@@ -1,3 +1,7 @@
+### get account
+GET http://localhost:8085/account?user_id=1
+Accept: application/json
+
 ### create account
 POST http://localhost:8085/account
 Content-Type: application/json
