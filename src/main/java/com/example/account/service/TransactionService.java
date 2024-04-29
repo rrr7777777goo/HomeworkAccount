@@ -14,15 +14,19 @@ import com.example.account.type.TransactionResultType;
 import com.example.account.type.TransactionType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.jni.Local;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.example.account.type.AccountStatus.IN_USE;
 import static com.example.account.type.TransactionResultType.F;
 import static com.example.account.type.TransactionResultType.S;
+import static com.example.account.type.TransactionType.CANCEL;
 import static com.example.account.type.TransactionType.USE;
 
 @Slf4j
@@ -50,14 +54,14 @@ public class TransactionService {
 
         account.useBalance(amount);
 
-        return TransactionDto.fromEntity(saveAndGetTranscation(S, account, amount));
+        return TransactionDto.fromEntity(saveAndGetTranscation(USE, S, account, amount));
     }
 
     private void validateUseBalance(AccountUser user, Account account, Long amount) {
         if(!Objects.equals(user.getId(), account.getAccountUser().getId())) {
             throw new AccountException(ErrorCode.USER_ACCOUNT_UNMATCH);
         }
-        if(account.getAccountStatus() != AccountStatus.IN_USE) {
+        if(account.getAccountStatus() != IN_USE) {
             throw new AccountException(ErrorCode.ACCOUNT_ALREADY_UNREGISTERED);
         }
         if(account.getBalance() < amount) {
@@ -70,13 +74,18 @@ public class TransactionService {
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new AccountException(ErrorCode.ACCOUNT_NOT_FOUND));
 
-        saveAndGetTranscation(F, account, amount);
+        saveAndGetTranscation(USE, F, account, amount);
     }
 
-    private Transaction saveAndGetTranscation(TransactionResultType transactionResultType, Account account, Long amount) {
+    private Transaction saveAndGetTranscation(
+            TransactionType transactionType,
+            TransactionResultType transactionResultType,
+            Account account,
+            Long amount
+    ) {
         return transactionRepository.save(
                 Transaction.builder().
-                        transactionType(USE)
+                        transactionType(transactionType)
                         .transactionResultType(transactionResultType)
                         .account(account)
                         .amount(amount)
@@ -85,5 +94,44 @@ public class TransactionService {
                         .transactedAt(LocalDateTime.now())
                         .build()
         );
+    }
+
+    @Transactional
+    public TransactionDto cancelBalance(String transactionId,
+                                        String accountNumber,
+                                        Long amount
+    ) {
+        Transaction transaction = transactionRepository.findByTransactionId(transactionId)
+                .orElseThrow(() -> new AccountException(ErrorCode.TRANSACTION_NOT_FOUND));
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(()->new AccountException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        validateCancelBalance(amount, transaction, account);
+
+        account.cancelBalance(amount);
+
+        return TransactionDto.fromEntity(
+                saveAndGetTranscation(CANCEL, S, account, amount)
+        );
+    }
+
+    private void validateCancelBalance(Long amount, Transaction transaction, Account account) {
+        if(!Objects.equals(transaction.getAccount().getId(), account.getId())) {
+            throw new AccountException(ErrorCode.TRANSACTION_ACCOUNT_UNMATCH);
+        }
+        if(!Objects.equals(transaction.getAmount(), amount)) {
+            throw new AccountException(ErrorCode.CANCEL_MUST_FULLY);
+        }
+        if(transaction.getTransactedAt().isBefore(LocalDateTime.now().minusYears(1))) {
+            throw new AccountException(ErrorCode.TOO_OLD_ORDER_TO_CANCEL);
+        }
+    }
+
+    @Transactional
+    public void saveFailedCancelTransaction(String accountNumber, Long amount) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new AccountException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        saveAndGetTranscation(CANCEL, F, account, amount);
     }
 }
