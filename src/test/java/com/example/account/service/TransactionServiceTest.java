@@ -104,7 +104,7 @@ public class TransactionServiceTest {
                 () -> transactionService.useBalance(1L, "100000000", 1000L));
 
         // then
-        assertEquals(ErrorCode.ACCOUNT_NOT_FOUND, exception.getErrorCode());
+        assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
